@@ -1,0 +1,71 @@
+!!!
+%html
+  %head
+    %title Particles Demo - PlayfulJS
+    %meta{ name: "viewport", content: "width=device-width, initial-scale=1.0, maximum-scale=1.0" }
+    %script{ src: "http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js" }
+
+  %body{ style: 'background: #000' }
+    %canvas{ id: 'display', width: '1', height: '1' }
+
+    :coffeescript
+      DAMPING = 0.999
+
+      class Particle
+        constructor: (x, y) ->
+          @x = @oldX = x 
+          @y = @oldY = y
+
+        integrate: ->
+          velocityX = @x - @oldX
+          velocityY = @y - @oldY
+          @oldX = @x 
+          @oldY = @y
+          @x += velocityX
+          @y += velocityY
+
+        attract: (x, y) ->
+          dx = x - @x 
+          dy = y - @y
+          distance = Math.sqrt(dx * dx + dy * dy)
+          @x += dx / distance
+          @y += dy / distance
+
+        draw: (ctx) ->
+          ctx.strokeStyle = '#ffffff'
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          ctx.moveTo @oldX, @oldY
+          ctx.lineTo @x, @y
+          ctx.stroke()
+
+      $ = jQuery
+      $ ->
+        display = ("#display")
+        
+      context = display.getContext('2d')
+      width = display.width = window.innerWidth
+      height = display.height = window.innerHeight
+      mouse = { x: width * 0.5, y: height * 0.5 }
+      particles = (new Particle(Math.random() * width, Math.random() * height) for i in [0...200])
+
+      display.addEventListener 'mousemove', (e) => @onMousemove(e)
+
+      @onMousemove = (e) ->
+        mouse.x = e.clientX
+        mouse.y = e.clientY
+
+      requestAnimationFrame => @frame()
+
+      @frame = ->
+        requestAnimationFrame => @frame()
+        context.clearRect 0, 0, width, height
+        for i in [0...particles.length]
+          particles[i].attract mouse.x, mouse.y
+          particles[i].integrate()
+          particles[i].draw context
+        
+
+
+
+

@@ -1,0 +1,73 @@
+!!!
+%html
+  %head
+    %title Particle Fountain Demo - PlayfulJS
+    %meta#viewport{ content: "width=device-width, initial-scale=1.0, maximum-scale=1.0" }
+    %script{ src: "http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js" }
+
+  %body{ style: 'background: #000' }
+    %canvas#display{ width: '1', height: '1' }
+
+    :coffee
+      DAMPING = 0.9999
+      GRAVITY = 0.3
+
+      class Particle
+        constructor: (x, y) ->
+          @x = @oldX = x
+          @y = @oldY = y
+
+        integrate: ->
+          velocity = @getVelocity()
+          @oldX = @x
+          @oldY = @y
+          @x += velocity.x * DAMPING
+          @y += velocity.y * DAMPING
+
+        getVelocity: ->
+          return x: @x - @oldX, y: @y - @oldY
+        
+        move: (x, y) ->
+          @x += x
+          @y += y
+
+        bounce: (height) ->
+          if @y > height
+            velocity = @getVelocity()
+            @oldY = height
+            @y = @oldY - velocity.y * 0.3
+
+        draw: (ctx) ->
+          ctx.strokeStyle = '#0099ff'
+          ctx.lineWidth = 3
+          ctx.beginPath()
+          ctx.moveTo @oldX, @oldY
+          ctx.lineTo @x, @y
+          ctx.stroke()
+
+
+      $ = jQuery
+      $ ->
+        display = $("#display")
+
+      context = display.getContext('2d')
+      drops = []
+      width = display.width = window.innerWidth
+      height = display.height = window.innerHeight
+
+      context.globalCompositeOperation = 'overlay'
+      requestAnimationFrame => @frame()
+
+      @frame = ->
+        requestAnimationFrame => @frame()
+        context.clearRect 0, 0, width, height
+        for j in [0...5]
+          if drops.length < 1000
+            drop = new Particle(width * 0.5, height)
+            drop.move(Math.random() * 4 - 2, Math.random() * -2 - 15)
+            drops.push drop
+        for i in [0...drops.length]
+          drops[i].move 0, GRAVITY
+          drops[i].integrate()
+          drops[i].bounce height
+          drops[i].draw context
